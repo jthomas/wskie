@@ -1,0 +1,26 @@
+{
+  "name": "wskie",
+  "version": "0.0.1",
+  "description": "OpenWhisk utility to run Actions locally",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jthomas/wskie.git"
+  },
+  "keywords": [
+    "openwhisk",
+    "serverless"
+  ],
+  "author": "James Thomas <james@jamesthom.as>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jthomas/wskie/issues"
+  },
+  "homepage": "https://github.com/jthomas/wskie#readme",
+  "devDependencies": {
+    "ava": "^0.16.0"
+  }
+}
