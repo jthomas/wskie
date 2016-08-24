@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/jthomas/wskie#readme",
   "devDependencies": {
-    "ava": "^0.16.0"
+    "ava": "^0.16.0",
+    "proxyquire": "^1.7.10"
   }
 }
