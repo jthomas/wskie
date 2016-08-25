@@ -1,0 +1,6 @@
+{
+  "value": {
+    "main": "main",
+    "code": "function main (params) {\n  var user = params.user || \"unknown\";\n  return { message: \"Hello \" +  user + \"!\" };\n}\n"
+  }
+}

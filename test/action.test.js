@@ -8,13 +8,15 @@ const request_stub = {}
 const Action = proxyquire('../lib/action', {'request': request_stub})
 
 test('will start a new Docker container from the Action image', t => {
-  t.plan(2)
+  t.plan(4)
   const docker_image = 'sample_image'
-  const container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  const container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
 
   const docker = {
-    run: (image, args, stream, cb) => {
+    run: (image, args, stream, create_opts, start_opts, cb) => {
       t.is(image, docker_image, 'Docker image passed to run command does not match constructor parameter')
+      t.deepEqual(create_opts, { ExposedPorts: { '8080/tcp': {} } })
+      t.deepEqual(start_opts, { PortBindings: { '8080/tcp': [ { 'HostPort': '' } ] } })
       cb(false, {}, container)
       t.deepEqual(action.container, container, 'Returned Docker container not stored internally')
     }
@@ -75,7 +77,7 @@ test('can update action source for running containers', t => {
   }
 
   const action = new Action()
-  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
   return action.source(source)
 })
 
@@ -92,7 +94,7 @@ test('can invoke action with parameters on running container', t => {
   }
 
   const action = new Action()
-  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
 
   return action.invoke(args).then(body => {
     t.deepEqual(body, result, 'HTTP POST response does not match promise result.')
@@ -107,19 +109,19 @@ test('will reject promise when updating action source request fails', t => {
   }
 
   const action = new Action()
-  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
   t.throws(action.source(source))
 })
 
 test('will retrieve HTTP URL string using exposed container port', t => {
   const action = new Action()
-  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
   t.is(action.http_url(), 'http://127.0.0.1:32770', 'HTTP URL does not match exposed port for single port.')
 
-  action.container = { Ports: [{ IP: '1.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { Ports: [{ IP: '1.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
   t.is(action.http_url(), 'http://1.0.0.0:32770', 'HTTP URL does not match exposed port for external IP.')
 
-  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 81, PublicPort: 32771, Type: 'tcp' }, { IP: '0.0.0.0', PrivatePort: 80, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 81, PublicPort: 32771, Type: 'tcp' }, { IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
   t.is(action.http_url(), 'http://127.0.0.1:32770', 'HTTP URL does not match exposed port for multiple ports.')
 })
 
@@ -132,7 +134,7 @@ test('will throw exception when exposed port is missing HTTP port', t => {
 test('will reject promise when Docker containers fails to start due to error in callback', t => {
   const docker_image = 'sample_image'
   const docker_client = {
-    run: (image, args, stream, cb) => {
+    run: (image, args, stream, create_opts, start_opts, cb) => {
       cb(new Error('unknown docker error'))
     }
   }
