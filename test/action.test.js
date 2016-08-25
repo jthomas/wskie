@@ -1,7 +1,6 @@
 'use strict'
 
 const test = require('ava')
-
 const proxyquire = require('proxyquire')
 
 const request_stub = {}
@@ -23,6 +22,35 @@ test('will start a new Docker container from the Action image', t => {
 
   const action = new Action(docker, docker_image)
   action.start()
+})
+
+test('will stop the running Docker container for the Action', t => {
+  t.plan(2)
+  const container = { Id: 'ContainerId' }
+
+  const docker = {
+    getContainer: (id) => {
+      t.is(id, container.Id, 'Docker container ID should match active container')
+      return { stop: (cb) => cb() }
+    }
+  }
+
+  const action = new Action(docker)
+  action.container = container
+  return action.stop().then(() => {
+    t.is(action.container, null, 'Container instance is null after stopping.')
+  })
+})
+
+test('will not start container is there is already an active container', t => {
+  const action = new Action()
+  action.container = true
+  t.throws(action.start(), /Unable to start Action, the container is already running/)
+})
+
+test('will not stop Action without an active container', t => {
+  const action = new Action()
+  t.throws(action.stop(), /Unable to stop Action, the container is not running/)
 })
 
 test('will throw exception if we try to update source without active container', t => {
