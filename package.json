@@ -23,5 +23,8 @@
   "devDependencies": {
     "ava": "^0.16.0",
     "proxyquire": "^1.7.10"
+  },
+  "dependencies": {
+    "openwhisk": "^2.1.3"
   }
 }
