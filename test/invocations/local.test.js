@@ -34,8 +34,3 @@ test('will retrieve action source from local path', t => {
     t.is(contents, 'sample file contents', 'Retrieved Action source matches file contents')
   })
 })
-
-test('will return empty params', t => {
-  const localInvocation = new LocalInvocation('action.js')
-  t.deepEqual(localInvocation.retrieveParameters(), {})
-})
