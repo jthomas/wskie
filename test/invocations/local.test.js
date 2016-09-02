@@ -34,3 +34,12 @@ test('will retrieve action source from local path', t => {
     t.is(contents, 'sample file contents', 'Retrieved Action source matches file contents')
   })
 })
+
+test('will retrieve action parameters', t => {
+  t.plan(1)
+  const parameters = { foo: 'bar', num: 1, bool: true }
+  const localInvocation = new LocalInvocation(null, parameters)
+  return localInvocation.retrieveParameters().then(_parameters => {
+    t.deepEqual(_parameters, parameters, 'Retrieved Action parameters are empty')
+  })
+})

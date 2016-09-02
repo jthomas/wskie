@@ -14,8 +14,9 @@ test('will retrieve action source', t => {
 
 test('will retrieve action parameters', t => {
   t.plan(1)
-  const baseInvocation = new BaseInvocation()
-  return baseInvocation.retrieveParameters().then(parameters => {
-    t.deepEqual(parameters, {}, 'Retrieved Action parameters are empty')
+  const parameters = { foo: 'bar', num: 1, bool: true }
+  const baseInvocation = new BaseInvocation(parameters)
+  return baseInvocation.retrieveParameters().then(_parameters => {
+    t.deepEqual(_parameters, parameters, 'Retrieved Action parameters are empty')
   })
 })

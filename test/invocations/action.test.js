@@ -35,8 +35,9 @@ test('will throw error if client fails to retrieve action source', t => {
 
 test('will retrieve action parameters', t => {
   t.plan(1)
-  const actionInvocation = new ActionInvocation()
-  return actionInvocation.retrieveParameters().then(parameters => {
-    t.deepEqual(parameters, {}, 'Retrieved Action parameters are empty')
+  const parameters = { foo: 'bar', num: 1, bool: true }
+  const actionInvocation = new ActionInvocation(null, null, parameters)
+  return actionInvocation.retrieveParameters().then(_parameters => {
+    t.deepEqual(_parameters, parameters, 'Retrieved Action parameters are empty')
   })
 })

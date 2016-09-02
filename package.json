@@ -25,6 +25,7 @@
     "proxyquire": "^1.7.10"
   },
   "dependencies": {
+    "commander": "^2.9.0",
     "openwhisk": "^2.1.3"
   }
 }
