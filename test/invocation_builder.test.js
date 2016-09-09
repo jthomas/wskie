@@ -40,4 +40,10 @@ test('should parse parameters from command-line options for invocation', t => {
 
   invocationBuilder.parameters = ['hello=[1,2,3,4,5]']
   t.deepEqual(invocationBuilder.parseParameters(), {hello: [1, 2, 3, 4, 5]}, 'Parses list parameter command-line options')
+
+  invocationBuilder.parameters = ['hello={"testing": 1}']
+  t.deepEqual(invocationBuilder.parseParameters(), {hello: {testing: 1}}, 'Parses object parameter command-line options')
+
+  invocationBuilder.parameters = ['hello={"test']
+  t.deepEqual(invocationBuilder.parseParameters(), {hello: '{"test'}, 'Parses broken JSON as string command-line options')
 })
