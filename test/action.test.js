@@ -81,7 +81,7 @@ test('can update action source for running containers', t => {
     t.is(options.url, 'http://127.0.0.1:32770/init', 'URL does not match Docker container host & port.')
     t.is(options.json, true, 'JSON parameter not set in HTTP POST options')
     t.deepEqual(options.body, { value: { main: 'main', code: source } }, 'HTTP POST body does not container Action source')
-    cb()
+    cb(false, {statusCode: 200}, {})
   }
 
   const action = new Action()
@@ -98,7 +98,7 @@ test('can invoke action with parameters on running container', t => {
     t.is(options.url, 'http://127.0.0.1:32770/run', 'URL does not match Docker container host & port.')
     t.is(options.json, true, 'JSON parameter not set in HTTP POST options')
     t.deepEqual(options.body, { value: args }, 'HTTP POST body does not container invocation parameters')
-    cb(false, {}, result)
+    cb(false, {statusCode: 200}, result)
   }
 
   const action = new Action()
@@ -117,9 +117,38 @@ test('will reject promise when updating action source request fails', t => {
   }
 
   const action = new Action()
-  action.container = { Ports: [{ IP: '0.0.0.0', PrivatePort: 8080, PublicPort: 32770, Type: 'tcp' }] }
+  action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
   t.throws(action.source(source))
 })
+
+test('will reject promise when updating action source request returns error response', t => {
+  const source = 'testing'
+
+  request_stub.post = (options, cb) => {
+    const resp = {statusCode: 502}
+    const body = {error: 'some error logs'}
+    cb(false, resp, body)
+  }
+
+  const action = new Action()
+  action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
+  t.throws(action.source(source), /some error logs/)
+})
+
+test('will reject promise when invoking action request returns error response', t => {
+  const source = 'testing'
+
+  request_stub.post = (options, cb) => {
+    const resp = {statusCode: 502}
+    const body = {error: 'some error logs'}
+    cb(false, resp, body)
+  }
+
+  const action = new Action()
+  action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
+  t.throws(action.invoke({}), /some error logs/)
+})
+
 
 test('will retrieve HTTP URL string using exposed container port', t => {
   const action = new Action()

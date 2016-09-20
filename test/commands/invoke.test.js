@@ -44,7 +44,7 @@ test.serial('will handle invocation retrieve failing', t => {
   t.throws(InvokeCommand('source.js', [])).then(() => {
     t.is(logs.length, 3, 'invoke commands outputs three log lines')
     t.is(logs[0], 'invoking action from local file: source.js', 'invoke command output references local file')
-    t.is(logs[1], '❌ Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?', 'invoke command prints error message')
+    t.is(logs[1], '❌  Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?\n', 'invoke command prints error message')
     t.is(logs[2], 'hello', 'invoke command print error trace')
   })
 })
@@ -57,7 +57,7 @@ test.serial('will handle action start failing', t => {
   t.throws(InvokeCommand('source.js', [])).then(() => {
     t.is(logs.length, 3, 'invoke commands outputs three log lines')
     t.is(logs[0], 'invoking action from local file: source.js', 'invoke command output references local file')
-    t.is(logs[1], '❌ Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?', 'invoke command prints error message')
+    t.is(logs[1], '❌  Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?\n', 'invoke command prints error message')
     t.is(logs[2], 'failed', 'invoke command print error trace')
   })
 })
@@ -71,7 +71,7 @@ test.serial('will handle action source failing', t => {
   t.throws(InvokeCommand('source.js', [])).then(() => {
     t.is(logs.length, 3, 'invoke commands outputs three log lines')
     t.is(logs[0], 'invoking action from local file: source.js', 'invoke command output references local file')
-    t.is(logs[1], '❌ Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?', 'invoke command prints error message')
+    t.is(logs[1], '❌  Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?\n', 'invoke command prints error message')
     t.is(logs[2], 'failed', 'invoke command print error trace')
   })
 })
@@ -86,7 +86,7 @@ test.serial('will handle action invoke failing', t => {
   t.throws(InvokeCommand('source.js', [])).then(() => {
     t.is(logs.length, 3, 'invoke commands outputs three log lines')
     t.is(logs[0], 'invoking action from local file: source.js', 'invoke command output references local file')
-    t.is(logs[1], '❌ Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?', 'invoke command prints error message')
+    t.is(logs[1], '❌  Oh dear, there has been a problem invoking your action. Maybe these logs can help you resolve it?\n', 'invoke command prints error message')
     t.is(logs[2], 'failed', 'invoke command print error trace')
   })
 })
