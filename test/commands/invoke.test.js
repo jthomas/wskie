@@ -21,7 +21,7 @@ const action = {
 }
 
 const af_stub = {
-  create: () => action
+  create: () => Promise.resolve(action)
 }
 
 const InvokeCommand = proxyquire('../../lib/commands/invoke.js', {'console': console_stub, '../invocation_builder.js': ib_stub, '../action_factory.js': af_stub})

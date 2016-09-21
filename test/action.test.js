@@ -12,13 +12,15 @@ test('will start a new Docker container from the Action image', t => {
   t.plan(4)
   const docker_image = 'sample_image'
   const container_id = 'xxxxx12345'
+  const env = ['FOO=bar']
+
   const container = { Id: container_id, NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32796'}]}} }
 
   const ee = new EventEmitter()
   const docker = { 
     run: (image, args, stream, create_opts, cb) => {
       t.is(image, docker_image, 'Docker image passed to run command does not match constructor parameter')
-      t.deepEqual(create_opts, { ExposedPorts: { '8080/tcp': {} }, PortBindings: { '8080/tcp': [ { 'HostPort': '' } ] } })
+      t.deepEqual(create_opts, { Env: [ 'FOO=bar'], ExposedPorts: { '8080/tcp': {} }, PortBindings: { '8080/tcp': [ { 'HostPort': '' } ] } })
       process.nextTick(() => ee.emit('start', {id: container_id}))
       return ee
     },
@@ -28,7 +30,7 @@ test('will start a new Docker container from the Action image', t => {
     }
   }
 
-  const action = new Action(docker, docker_image)
+  const action = new Action(docker, docker_image, env)
   action.wait_for_http_server = () => Promise.resolve()
   return action.start().then(() => {
       t.deepEqual(action.container, container, 'Returned Docker container not stored internally')
@@ -92,20 +94,21 @@ test('can update action source for running containers', t => {
 
 test('can invoke action with parameters on running container', t => {
   const args = { hello: 'world' }
+  const auth_key = 'some_password'
   const result = { world: 'hello' }
   t.plan(4)
 
   request_stub.post = (options, cb) => {
     t.is(options.url, 'http://127.0.0.1:32770/run', 'URL does not match Docker container host & port.')
     t.is(options.json, true, 'JSON parameter not set in HTTP POST options')
-    t.deepEqual(options.body, { value: args }, 'HTTP POST body does not container invocation parameters')
+    t.deepEqual(options.body, { authKey: auth_key, value: args }, 'HTTP POST body does not container invocation parameters')
     cb(false, {statusCode: 200}, result)
   }
 
   const action = new Action()
   action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
 
-  return action.invoke(args).then(body => {
+  return action.invoke(args, auth_key).then(body => {
     t.deepEqual(body, result, 'HTTP POST response does not match promise result.')
   })
 })
