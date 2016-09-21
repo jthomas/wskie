@@ -29,6 +29,7 @@ test('will start a new Docker container from the Action image', t => {
   }
 
   const action = new Action(docker, docker_image)
+  action.wait_for_http_server = () => Promise.resolve()
   return action.start().then(() => {
       t.deepEqual(action.container, container, 'Returned Docker container not stored internally')
   })
@@ -200,4 +201,77 @@ test('will reject promise when Docker containers fails to start due to error ins
 
   const action = new Action(docker_client, docker_image)
   t.throws(action.start(), /unknown docker error/)
+})
+
+test.serial('will check when http server is available', t => {
+  t.plan(1)
+  const action = new Action()
+
+  action.http_url = () => 'http://127.0.0.1:12345'
+  request_stub.get = (options, cb) => {
+    t.is(options.url, action.http_url(), 'URL does not match Docker container host & port.')
+    cb(false)
+  }
+
+  return action.wait_for_http_server()
+})
+
+test.serial('will wait until http server is available', t => {
+  t.plan(2)
+  const action = new Action()
+  let called = false
+
+  action.http_url = () => 'http://127.0.0.1:12345'
+  request_stub.get = (options, cb) => {
+    t.is(options.url, action.http_url(), 'URL does not match Docker container host & port.')
+    cb(!called)
+    called = true
+  }
+
+  return action.wait_for_http_server()
+})
+
+test.serial('will wait until http server is available with delay', t => {
+  t.plan(3)
+  const action = new Action()
+  let ready = false
+
+  action.http_url = () => 'http://127.0.0.1:12345'
+  request_stub.get = (options, cb) => {
+    t.is(options.url, action.http_url(), 'URL does not match Docker container host & port.')
+    cb(!ready)
+  }
+
+  setTimeout(() => {
+    ready = true
+  }, 150)
+  return action.wait_for_http_server()
+})
+
+test.serial('will wait until http server is available with variable delay options', t => {
+  t.plan(4)
+  const action = new Action()
+  let ready = false
+
+  action.http_url = () => 'http://127.0.0.1:12345'
+  request_stub.get = (options, cb) => {
+    t.is(options.url, action.http_url(), 'URL does not match Docker container host & port.')
+    cb(!ready)
+  }
+
+  setTimeout(() => {
+    ready = true
+  }, 150)
+  return action.wait_for_http_server(50)
+})
+
+test.serial('will timeout waiting for http server to be available', t => {
+  const action = new Action()
+
+  action.http_url = () => 'http://127.0.0.1:12345'
+  request_stub.get = (options, cb) => {
+    cb(true)
+  }
+
+  t.throws(action.wait_for_http_server(50, 100), 'Timed out waiting for HTTP server to become available in container.')
 })
