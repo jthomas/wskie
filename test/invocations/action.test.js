@@ -22,9 +22,49 @@ test('will retrieve action source from remote action identifier', t => {
   })
 })
 
+test('will retrieve action source from remote action identifier with namespace', t => {
+  t.plan(3)
+  const client = {}
+  const action = 'namespace/actionId'
+  const actionSource = 'sample action contents'
+  const actionInvocation = new ActionInvocation(client, action)
+
+  client.actions = {
+    get: (params) => {
+      t.is(params.actionName, 'actionId')
+      t.is(params.namespace, 'namespace')
+      return Promise.resolve({exec: {code: actionSource}})
+    }
+  }
+
+  return actionInvocation.retrieveActionSource().then(contents => {
+    t.is(contents, actionSource, 'Retrieved Action source matches remote Action contents')
+  })
+})
+
+test('will retrieve action source from remote action identifier with full namespace', t => {
+  t.plan(3)
+  const client = {}
+  const action = '/namespace/actionId'
+  const actionSource = 'sample action contents'
+  const actionInvocation = new ActionInvocation(client, action)
+
+  client.actions = {
+    get: (params) => {
+      t.is(params.actionName, 'actionId')
+      t.is(params.namespace, 'namespace')
+      return Promise.resolve({exec: {code: actionSource}})
+    }
+  }
+
+  return actionInvocation.retrieveActionSource().then(contents => {
+    t.is(contents, actionSource, 'Retrieved Action source matches remote Action contents')
+  })
+})
+
 test('will throw error if client fails to retrieve action source', t => {
   const client = {}
-  const actionInvocation = new ActionInvocation(client)
+  const actionInvocation = new ActionInvocation(client, '')
 
   client.actions = {
     get: (params) => Promise.reject('some error')
