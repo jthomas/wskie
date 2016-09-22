@@ -12,15 +12,15 @@ test('will start a new Docker container from the Action image', t => {
   t.plan(4)
   const docker_image = 'sample_image'
   const container_id = 'xxxxx12345'
-  const env = ['FOO=bar']
+  const props = {EDGE_HOST: 'localhost', AUTH_KEY: 'password'}
 
   const container = { Id: container_id, NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32796'}]}} }
 
   const ee = new EventEmitter()
-  const docker = { 
+  const docker = {
     run: (image, args, stream, create_opts, cb) => {
       t.is(image, docker_image, 'Docker image passed to run command does not match constructor parameter')
-      t.deepEqual(create_opts, { Env: [ 'FOO=bar'], ExposedPorts: { '8080/tcp': {} }, PortBindings: { '8080/tcp': [ { 'HostPort': '' } ] } })
+      t.deepEqual(create_opts, { Env: [ 'EDGE_HOST=localhost:443', 'AUTH_KEY=password'], ExposedPorts: { '8080/tcp': {} }, PortBindings: { '8080/tcp': [ { 'HostPort': '' } ] } })
       process.nextTick(() => ee.emit('start', {id: container_id}))
       return ee
     },
@@ -30,10 +30,10 @@ test('will start a new Docker container from the Action image', t => {
     }
   }
 
-  const action = new Action(docker, docker_image, env)
+  const action = new Action(docker, docker_image, props)
   action.wait_for_http_server = () => Promise.resolve()
   return action.start().then(() => {
-      t.deepEqual(action.container, container, 'Returned Docker container not stored internally')
+    t.deepEqual(action.container, container, 'Returned Docker container not stored internally')
   })
 })
 
@@ -92,10 +92,10 @@ test('can update action source for running containers', t => {
   return action.source(source)
 })
 
-test('can invoke action with parameters on running container', t => {
+test.serial('can invoke action with parameters on running container', t => {
   const args = { hello: 'world' }
-  const auth_key = 'some_password'
   const result = { world: 'hello' }
+  const auth_key = 'password'
   t.plan(4)
 
   request_stub.post = (options, cb) => {
@@ -107,8 +107,9 @@ test('can invoke action with parameters on running container', t => {
 
   const action = new Action()
   action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
+  action.props = {AUTH_KEY: auth_key}
 
-  return action.invoke(args, auth_key).then(body => {
+  return action.invoke(args).then(body => {
     t.deepEqual(body, result, 'HTTP POST response does not match promise result.')
   })
 })
@@ -122,10 +123,11 @@ test('will reject promise when updating action source request fails', t => {
 
   const action = new Action()
   action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
+  action.props = {}
   t.throws(action.source(source))
 })
 
-test('will reject promise when updating action source request returns error response', t => {
+test.serial('will reject promise when updating action source request returns error response', t => {
   const source = 'testing'
 
   request_stub.post = (options, cb) => {
@@ -135,13 +137,12 @@ test('will reject promise when updating action source request returns error resp
   }
 
   const action = new Action()
+  action.props = {}
   action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
   t.throws(action.source(source), /some error logs/)
 })
 
 test('will reject promise when invoking action request returns error response', t => {
-  const source = 'testing'
-
   request_stub.post = (options, cb) => {
     const resp = {statusCode: 502}
     const body = {error: 'some error logs'}
@@ -150,9 +151,9 @@ test('will reject promise when invoking action request returns error response', 
 
   const action = new Action()
   action.container = { NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} }
+  action.props = {}
   t.throws(action.invoke({}), /some error logs/)
 })
-
 
 test('will retrieve HTTP URL string using exposed container port', t => {
   const action = new Action()
@@ -186,7 +187,7 @@ test('will reject promise when Docker containers fails to start due to error in 
     }
   }
 
-  const action = new Action(docker_client, docker_image)
+  const action = new Action(docker_client, docker_image, {})
   t.throws(action.start(), /unknown docker error/)
 })
 
@@ -202,7 +203,7 @@ test('will reject promise when Docker containers fails to start due to error ins
     getContainer: () => ({inspect: (cb) => cb(new Error('unknown docker error'))})
   }
 
-  const action = new Action(docker_client, docker_image)
+  const action = new Action(docker_client, docker_image, {})
   t.throws(action.start(), /unknown docker error/)
 })
 

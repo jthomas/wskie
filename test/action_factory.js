@@ -11,7 +11,7 @@ test('will create new Action instances with default parameters', t => {
   return ActionFactory.create().then(action => {
     t.is(action.image, 'nodejsaction')
     t.is(action.docker.modem.socketPath, '/var/run/docker.sock')
-    t.deepEqual(action.env, ['EDGE_HOST=openwhisk.ng.bluemix.net', 'AUTH_KEY=missing'])
+    t.deepEqual(action.props, {EDGE_HOST: 'openwhisk.ng.bluemix.net', AUTH_KEY: 'missing'})
   })
 })
 
@@ -23,6 +23,6 @@ test('will create new Action instances using whisk credentials from wskprops fil
     namespace: 'ns'
   }))
   return ActionFactory.create().then(action => {
-    t.deepEqual(action.env, ['EDGE_HOST=localhost', 'AUTH_KEY=password'])
+    t.deepEqual(action.props, {EDGE_HOST: 'localhost', AUTH_KEY: 'password'})
   })
 })

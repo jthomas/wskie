@@ -1,21 +1,58 @@
 'use strict'
 
 const test = require('ava')
+const proxyquire = require('proxyquire')
 
-const InvocationBuilder = require('../lib/invocation_builder')
+const stub = {}
+const InvocationBuilder = proxyquire('../lib/invocation_builder', {'./credentials.js': stub})
 const LocalInvocation = require('../lib/invocations/local')
+const ActionInvocation = require('../lib/invocations/action')
 
 test('should return local invocation with javascript file parameters', t => {
+  t.plan(1)
   const id = 'some_file.js'
   const invocationBuilder = new InvocationBuilder(id, [])
 
-  const invocation = invocationBuilder.invocation()
-  t.true(invocation instanceof LocalInvocation, 'File name id resolves to LocalInvocation class')
+  return invocationBuilder.invocation().then(invocation => {
+    t.true(invocation instanceof LocalInvocation, 'File name id resolves to LocalInvocation class')
+  })
+})
+
+test('should return openwhisk action for string identifier', t => {
+  t.plan(4)
+  const id = 'action_name'
+  stub.getWskProps = () => (Promise.resolve({
+    apihost: 'localhost',
+    auth: 'password',
+    namespace: 'ns'
+  }))
+  const invocationBuilder = new InvocationBuilder(id, [])
+
+  return invocationBuilder.invocation().then(invocation => {
+    t.true(invocation instanceof ActionInvocation, 'Action identifier should resolve to ActionInvocation class')
+    t.is(invocation.client.actions.options.namespace, 'ns', 'Openwhisk namespace matches user credentials')
+    t.is(invocation.client.actions.options.api, 'https://localhost/api/v1/', 'Openwhisk endpoint matches user credentials')
+    t.is(invocation.client.actions.options.api_key, 'password', 'Openwhisk api key matches user credentials')
+  })
+})
+
+test('should reject promise when openwhisk credentials are missing for action identifier', t => {
+  const id = 'action_name'
+  stub.getWskProps = () => (Promise.resolve({
+  }))
+  const invocationBuilder = new InvocationBuilder(id, [])
+
+  return t.throws(invocationBuilder.invocation(), /Missing OpenWhisk credentials/)
 })
 
 test('should throw error when file identifier is not javascript extension', t => {
-  const id = 'some_file.xx'
-  const invocationBuilder = new InvocationBuilder(id)
+  let id = 'some_file.py'
+  let invocationBuilder = new InvocationBuilder(id)
+
+  t.throws(() => invocationBuilder.invocation(), /Unsupported file extension for Action/)
+
+  id = 'some_file.java'
+  invocationBuilder = new InvocationBuilder(id)
 
   t.throws(() => invocationBuilder.invocation(), /Unsupported file extension for Action/)
 })
