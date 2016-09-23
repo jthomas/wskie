@@ -1,7 +1,10 @@
 'use strict'
 
 const test = require('ava')
-const Container = require('../../lib/containers/container')
+const proxyquire = require('proxyquire')
+
+const request_stub = {}
+const Container = proxyquire('../../lib/containers/container', {'request': request_stub})
 
 test('will return whether container is running for running container', t => {
   t.plan(2)
@@ -171,4 +174,133 @@ test('will handle container start failures', t => {
   const container = new Container(client, id)
   container.isRunning = () => Promise.resolve(true)
   return t.throws(container.stop(), 'some error message')
+})
+
+test('will retrieve HTTP URL string using exposed container port', t => {
+  t.plan(1)
+  const id = 'container_id'
+  const client = {}
+
+  const container = new Container(client, id)
+  container.getState = () => Promise.resolve({ NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '0.0.0.0', HostPort: '32770'}]}} })
+  return container.httpUrl().then(httpUrl => {
+    t.is(httpUrl, 'http://127.0.0.1:32770', 'HTTP URL does not match exposed port for single port.')
+  })
+})
+
+test('will retrieve HTTP URL string for non-localhost IP using exposed container port', t => {
+  t.plan(1)
+  const id = 'container_id'
+  const client = {}
+
+  const container = new Container(client, id)
+  container.getState = () => Promise.resolve({ NetworkSettings: { Ports: {'8080/tcp': [{ HostIp: '1.0.0.0', HostPort: '32771'}]}} })
+  return container.httpUrl().then(httpUrl => {
+    t.is(httpUrl, 'http://1.0.0.0:32771', 'HTTP URL does not match exposed port for single port.')
+  })
+})
+
+test('will throw exception when exposed port is missing HTTP port', t => {
+  t.plan(4)
+  const id = 'container_id'
+  const client = {}
+
+  const container = new Container(client, id)
+  container.getState = () => Promise.resolve({ NetworkSettings: { Ports: {'8081/tcp': [{ HostIp: '1.0.0.0', HostPort: '32771'}]}} })
+  t.throws(container.httpUrl(), 'Exposed container ports does not include HTTP port.')
+
+  container.getState = () => Promise.resolve({ NetworkSettings: { Ports: {'8080/tcp': []}} })
+  t.throws(container.httpUrl(), 'Exposed container ports does not include HTTP port.')
+
+  container.getState = () => Promise.resolve({ NetworkSettings: {} })
+  t.throws(container.httpUrl(), 'Exposed container ports does not include HTTP port.')
+
+  container.getState = () => Promise.resolve({})
+  t.throws(container.httpUrl(), 'Exposed container ports does not include HTTP port.')
+})
+
+test('will test whether http server is available when container is not running', t => {
+  const id = 'container_id'
+  const client = {}
+
+  const container = new Container(client, id)
+  container.isRunning = () => Promise.resolve(false)
+  return t.throws(container.httpPortOpen(), 'Container is not running')
+})
+
+test.serial('will test whether http server is available', t => {
+  t.plan(1)
+  const id = 'container_id'
+  const client = {}
+
+  const container = new Container(client, id)
+  container.isRunning = () => Promise.resolve(true)
+
+  container.httpUrl = () => Promise.resolve('http://127.0.0.1:12345')
+  request_stub.get = (options, cb) => {
+    t.is(options.url, 'http://127.0.0.1:12345', 'URL does not match Docker container host & port.')
+    cb(false)
+  }
+
+  return container.httpPortOpen()
+})
+
+test.serial('will test whether http server is available with delay', t => {
+  t.plan(3)
+  const id = 'container_id'
+  const client = {}
+  let ready = false
+
+  const container = new Container(client, id)
+  container.isRunning = () => Promise.resolve(true)
+
+  container.httpUrl = () => Promise.resolve('http://127.0.0.1:12345')
+  request_stub.get = (options, cb) => {
+    t.is(options.url, 'http://127.0.0.1:12345', 'URL does not match Docker container host & port.')
+    cb(!ready)
+  }
+
+  setTimeout(() => {
+    ready = true
+  }, 150)
+
+  return container.httpPortOpen()
+})
+
+test.serial('will test whether http server is available with variable delay', t => {
+  t.plan(4)
+  const id = 'container_id'
+  const client = {}
+  let ready = false
+
+  const container = new Container(client, id)
+  container.isRunning = () => Promise.resolve(true)
+
+  container.httpUrl = () => Promise.resolve('http://127.0.0.1:12345')
+  request_stub.get = (options, cb) => {
+    t.is(options.url, 'http://127.0.0.1:12345', 'URL does not match Docker container host & port.')
+    cb(!ready)
+  }
+
+  setTimeout(() => {
+    ready = true
+  }, 150)
+
+  return container.httpPortOpen(50)
+})
+
+test.serial('will timeout waiting for http server to be available', t => {
+  t.plan(1)
+  const id = 'container_id'
+  const client = {}
+
+  const container = new Container(client, id)
+  container.isRunning = () => Promise.resolve(true)
+
+  container.httpUrl = () => Promise.resolve('http://127.0.0.1:12345')
+  request_stub.get = (options, cb) => {
+    cb(true)
+  }
+
+  return t.throws(container.httpPortOpen(50, 100), 'Timed out waiting for HTTP server to become available in container.')
 })
